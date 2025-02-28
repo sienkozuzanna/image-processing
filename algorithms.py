@@ -65,6 +65,20 @@ def adjust_contrast(org_image, contrast_factor):
             image.putpixel((w,h), new_pixel_val)
     return image
 
+def negative_image(org_image):
+    image = org_image.copy()
+    width, height = image.size
+    for h in range(height):
+        for w in range(width):
+            pixel = image.getpixel((w, h))
+            if (len(pixel) == 4):
+                r, g, b, a = pixel
+                image.putpixel((w, h), (255 - r, 255 - g, 255 - b, a))
+            else:
+                r, g, b = pixel
+                image.putpixel((w, h), (255 - r, 255 - g, 255 - b))
+    return image
+
 
 if __name__ == "__main__":
     import numpy as np
@@ -77,10 +91,14 @@ if __name__ == "__main__":
 
     gray_image = convert_to_gray(image)
     gray_image.show()
-    '''
+    
 
     contrast_image = adjust_contrast(image, 1.6)
     contrast_image.show()
+    '''
+
+    negative_image = negative_image(image)
+    negative_image.show()
 
 
 

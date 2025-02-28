@@ -36,6 +36,8 @@ with st.container():
 
                 grayscale = col1.checkbox("Convert to gray")
                 brightness = col1.slider("Adjust brightness", min_value=-255, max_value=255, value=0)
+                contrast = col1.slider("Adjust contrast", min_value=-5.0, max_value=5.0, value=1.0, step=0.1)
+                negative = col1.checkbox("Negative")
 
                 if grayscale:
                     processed_image = convert_to_gray(image)
@@ -43,7 +45,11 @@ with st.container():
                     processed_image = image
                 if(brightness!=0):
                     processed_image = adjust_brightness(processed_image, brightness)
-                
+                if(contrast!=0):
+                    processed_image = adjust_contrast(processed_image, contrast)
+                if negative:
+                    processed_image = negative_image(processed_image)
+
                 st.image(processed_image, caption="Przerobiony obraz", width=400)
         
 
