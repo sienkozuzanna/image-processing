@@ -1,3 +1,4 @@
+from PIL import Image
 
 def adjust_brightness(org_image, brightness=0):
     image = org_image.copy()
@@ -79,6 +80,20 @@ def negative_image(org_image):
                 image.putpixel((w, h), (255 - r, 255 - g, 255 - b))
     return image
 
+def binarization(org_image, threshold):
+    #first convert to gray
+    image=convert_to_gray(org_image.copy())
+    width, height = image.size
+    for h in range(height):
+        for w in range(width):
+            pixel = image.getpixel((w, h))
+            new_pixel_value = 255 if pixel[0] > threshold else 0 #pixel values: (gray, gray, gray, .)
+            if len(pixel) == 4:
+                image.putpixel((w, h), (new_pixel_value, new_pixel_value, new_pixel_value, pixel[3]))
+            else:
+                image.putpixel((w, h), (new_pixel_value, new_pixel_value, new_pixel_value))
+    return image
+
 
 if __name__ == "__main__":
     import numpy as np
@@ -92,13 +107,15 @@ if __name__ == "__main__":
     gray_image = convert_to_gray(image)
     gray_image.show()
     
-
     contrast_image = adjust_contrast(image, 1.6)
     contrast_image.show()
-    '''
 
     negative_image = negative_image(image)
     negative_image.show()
+    '''
+
+    image_binarization=binarization(image, 90)
+    image_binarization.show()
 
 
 
