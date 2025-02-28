@@ -1,6 +1,8 @@
 
-
+import numpy as np
+from PIL import Image 
 def adjust_brightness(org_image, brightness=0):
+    
     image = org_image.copy()
     height,width = image.size
     for h in range(height):
@@ -18,6 +20,8 @@ def adjust_brightness(org_image, brightness=0):
     return image
 
 def convert_to_gray(org_image):
+
+
     image = org_image.copy()
     height,width = image.size
     for h in range(height):
