@@ -9,28 +9,20 @@ st.title('Image processing app')
 with st.container():
     col1, col2 = st.columns([1,1])
 
-
     with col1:
-        
-        # Kontener z obramowaniem
         with st.container(height=110, border = False):
-
             uploaded_file = st.file_uploader("Wybierz obraz", type=["jpg", "png", "jpeg"])
-            
-        with st.container(height=500, border = True):   
+        with st.container(height=500, border = True):
             if uploaded_file is not None:
                 image = Image.open(uploaded_file)
                 st.image(image, caption="Oryginalny obraz", width=400)
 
-
-
     with col2:
-    
         with st.container(height=110, border=False):
             pass
-       
+
         with st.container(height=500, border=True):
-            
+
             if uploaded_file is not None:
                 image = Image.open(uploaded_file)
 
@@ -57,7 +49,9 @@ with st.container():
 
 
                 st.image(processed_image, caption="Przerobiony obraz", width=400)
-        
+            else:
+                st.warning("Proszę załadować obraz, aby przetworzyć.")
 
-    
-    
+
+
+
