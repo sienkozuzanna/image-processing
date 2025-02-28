@@ -11,11 +11,11 @@ with st.container():
 
     with col1:
         with st.container(height=110, border = False):
-            uploaded_file = st.file_uploader("Wybierz obraz", type=["jpg", "png", "jpeg"])
+            uploaded_file = st.file_uploader("Choose an image", type=["jpg", "png", "jpeg"])
         with st.container(height=500, border = True):
             if uploaded_file is not None:
                 image = Image.open(uploaded_file)
-                st.image(image, caption="Oryginalny obraz", width=400)
+                st.image(image, caption="Original Image", width=400)
 
     with col2:
         with st.container(height=110, border=False):
@@ -48,9 +48,22 @@ with st.container():
 
 
 
-                st.image(processed_image, caption="Przerobiony obraz", width=400)
+                st.image(processed_image, caption="Processed Image", width=400)
+
+                #downloading processed image
+                buffered = io.BytesIO()
+                processed_image.save(buffered, format="PNG")
+                buffered.seek(0)
+
+                st.download_button(
+                    label="Download Processed Image",
+                    data=buffered,
+                    file_name="processed_image.png",
+                    mime="image/png"
+                )
+
             else:
-                st.warning("Proszę załadować obraz, aby przetworzyć.")
+                st.warning("Please upload an image to process.")
 
 
 
