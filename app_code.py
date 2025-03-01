@@ -25,12 +25,13 @@ with st.container():
 
             if uploaded_file is not None:
                 image = Image.open(uploaded_file)
-
+                w, h = image.size
                 grayscale = col1.checkbox("Convert to gray")
                 brightness = col1.slider("Adjust brightness", min_value=-255, max_value=255, value=0)
                 contrast = col1.slider("Adjust contrast", min_value=-5.0, max_value=5.0, value=1.0, step=0.1)
                 negative = col1.checkbox("Negative")
                 binarization_enabled = col1.checkbox("Apply binarization")
+                average_filter_mask = col1.slider("Choose blurr", min_value=1, max_value=min(w,h), value =1, step = 2)
 
                 if grayscale:
                     processed_image = convert_to_gray(image)
@@ -45,7 +46,8 @@ with st.container():
                 if binarization_enabled:
                     binarization_threshold = col1.slider("Binarization threshold", min_value=0, max_value=255, step=1, value=128)
                     processed_image=binarization(processed_image, binarization_threshold)
-
+                if average_filter_mask!=1:
+                    processed_image = average_filter(processed_image, mask = average_filter_mask)
 
 
                 st.image(processed_image, caption="Processed Image", width=400)

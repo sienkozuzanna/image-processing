@@ -94,6 +94,113 @@ def binarization(org_image, threshold):
                 image.putpixel((w, h), (new_pixel_value, new_pixel_value, new_pixel_value))
     return image
 
+def average_filter(org_image, mask):
+    mask_size = mask
+    middle = mask_size//2
+    image = org_image.copy()
+    width, height = image.size
+    pixels = image.load()
+
+    new_image = Image.new("RGB", (width, height))
+    new_pixels = new_image.load()
+
+    for x in range(middle, width-1):
+        for y in range(middle, height-1):
+            sum_r = 0
+            sum_g = 0
+            sum_b =0
+            count = 0
+            for i in range(-middle, middle+1):
+                for j in range(-middle, middle+1):
+                    if 0 <= x + i < width and 0 <= y + j < height:
+                        r,g,b = pixels[x+i, y+j]
+                        sum_r += r
+                        sum_g+=g
+                        sum_b += b
+                        count+=1
+            avg_r = sum_r//count
+            avg_g = sum_g//count
+            avg_b = sum_b//count
+
+            new_pixels[x,y] = (avg_r, avg_g, avg_b)
+    return new_image
+
+def gaussian_filter(org_image, mask_size, sigma):
+    image = org_image.copy()
+
+    width,height = image.size
+    pixels = image.load()
+
+    new_image = Image.new("RGB", (width, height))
+    new_pixels = new_image.load()
+
+    def create_kernel(size, sigma=sigma):
+        kernel = np.fromfunction(
+        lambda x, y: (1/ (2 * np.pi * sigma ** 2)) * 
+                     np.exp(- ((x - (size // 2))**2 + (y - (size // 2))**2) / (2 * sigma ** 2)),
+        (size, size))
+        return kernel / np.sum(kernel)
+    
+    kernel = create_kernel(mask_size)
+    middle = mask_size//2
+
+    for x in range(middle, width-middle):
+        for y in range(middle, height-middle):
+            sum_r = sum_g = sum_b = 0
+            count =0
+            for i in range(-middle, middle+1):
+                for j in range(-middle, middle+1):
+                    if 0 <= x + i < width and 0 <= y + j < height:
+                        r,g,b = pixels[x+i, y+j]
+                        weight = kernel[i + middle, j + middle]
+                        sum_r += r * weight
+                        sum_g+=g * weight
+                        sum_b += b * weight
+                        count+=1
+            new_pixels[x,y] = (int(sum_r), int(sum_g), int(sum_b))
+    return new_image
+
+def sharpen_filter(org_image, middle):
+    image = org_image.copy()
+    width, height = image.size
+    pixels = image.load()
+    new_image = Image.new("RGB", (width, height))
+    new_pixels = new_image.load()
+
+    def create_kernel(middle,size=3):
+        kernel = [[0 for _ in range(size)] for _ in range(size)]
+        kernel[size // 2][size // 2] = middle # Centralny element ma dużą wagę
+
+        # Ustalanie pozostałych elementów na -1
+        for i in range(size):
+            for j in range(size):
+                if i != size // 2 or j != size // 2:
+                    kernel[i][j] = -1
+
+        return kernel
+    
+    mask = create_kernel(middle)
+    middle = 3//2
+    for x in range(middle, width-middle):
+        for y in range(middle, height-middle):
+            r_total, g_total, b_total = 0, 0, 0
+            
+            for i in range(-middle, middle+1):
+                for j in range(-middle, middle+1):
+                    if 0 <= x + i < width and 0 <= y + j < height:
+                        r,g,b = pixels[x+i, y+j]
+                        weight = mask[i + middle][j + middle]
+                        r_total += r * weight
+                        g_total+=g * weight
+                        b_total += b * weight
+  
+            new_pixels[x,y] = (min(max(r_total, 0), 255), min(max(g_total, 0), 255), min(max(b_total, 0), 255))
+    return new_image
+
+    
+
+            
+
 
 if __name__ == "__main__":
     import numpy as np
@@ -114,9 +221,11 @@ if __name__ == "__main__":
     negative_image.show()
     '''
 
-    image_binarization=binarization(image, 90)
-    image_binarization.show()
-
+    # image_binarization=binarization(image, 90)
+    # image_binarization.show()
+    blurred = average_filter(image, 3)
+    gaussian = sharpen_filter(blurred, 11)
+    gaussian.show()
 
 
 
