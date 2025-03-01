@@ -1,4 +1,6 @@
 from PIL import Image
+import matplotlib.pyplot as plt
+import streamlit as st
 
 def adjust_brightness(org_image, brightness=0):
     image = org_image.copy()
@@ -198,13 +200,64 @@ def sharpen_filter(org_image, middle):
     return new_image
 
     
+def histogram(org_image, gray_scale):
+    image = org_image.copy()
 
-            
+    def compute_histogram(image, gray_scale=False):
+        hist_r, hist_g, hist_b, histogram_gray = [0] * 256, [0] * 256, [0] * 256, [0] * 256
+        width, height = image.size
 
+        for h in range(height):
+            for w in range(width):
+                pixel = image.getpixel((w, h))
+
+                if gray_scale:
+                    gray_value = pixel[0]
+                    histogram_gray[gray_value] += 1
+                else:
+                    r, g, b = pixel[0], pixel[1], pixel[2]
+                    hist_r[r] += 1
+                    hist_g[g] += 1
+                    hist_b[b] += 1
+
+        if gray_scale:
+            return histogram_gray
+        else:
+            return hist_r, hist_g, hist_b
+
+    if gray_scale:
+        histogram = compute_histogram(image, gray_scale=True)
+
+        plt.figure(figsize=(10, 6))
+        plt.hist(range(256), bins=256, weights=histogram, color="black", alpha=0.7, edgecolor="gray")
+        plt.title("Grayscale Histogram", fontsize=16, fontweight='bold')
+        plt.xlabel("Brightness Level", fontsize=14)
+        plt.ylabel("Number of Pixels", fontsize=14)
+        plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+        plt.tight_layout()
+        st.pyplot(plt)
+
+    else:
+        hist_r, hist_g, hist_b = compute_histogram(image)
+
+        plt.figure(figsize=(10, 6))
+        plt.bar(range(256), hist_r, color="red", alpha=0.7, width=1.0, label="Red", zorder=3)
+        plt.bar(range(256), hist_g, color="green", alpha=0.7, width=1.0, label="Green", zorder=2)
+        plt.bar(range(256), hist_b, color="blue", alpha=0.7, width=1.0, label="Blue", zorder=1)
+
+        plt.title("RGB Histogram", fontsize=16, fontweight='bold')
+        plt.xlabel("Brightness Level", fontsize=14)
+        plt.ylabel("Number of Pixels", fontsize=14)
+        plt.legend(loc='upper right', fontsize=12)
+        plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+        plt.tight_layout()
+        st.pyplot(plt)
 
 if __name__ == "__main__":
     import numpy as np
     from PIL import Image
+    from matplotlib.pyplot import plt
+    import streamlit as st
     image = Image.open("example_photo.jpeg")
     image.show()
     '''
