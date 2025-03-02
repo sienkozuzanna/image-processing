@@ -1,6 +1,7 @@
 from PIL import Image
 import matplotlib.pyplot as plt
 import streamlit as st
+import numpy as np
 
 def adjust_brightness(org_image, brightness=0):
     image = org_image.copy()
@@ -253,13 +254,128 @@ def histogram(org_image, gray_scale):
         plt.tight_layout()
         st.pyplot(plt)
 
+def roberts_cross(org_image):
+
+    Gx = [[1,0],[0,-1]]
+    Gy = [[0,1],[-1,0]]
+
+    image = org_image.copy()
+    width, height = image.size
+
+    new_image = Image.new("RGB", (width, height))
+    new_pixels = new_image.load()
+
+    for i in range(0, width-1):
+        for j in range(0, height-1):
+            current_submatrix_r = np.array([[image.getpixel((i,j))[0], image.getpixel((i+1,j))[0]],[image.getpixel((i,j+1))[0],image.getpixel((i+1,j+1))[0]]])
+            current_submatrix_g = np.array([[image.getpixel((i,j))[1], image.getpixel((i+1,j))[1]],[image.getpixel((i,j+1))[1],image.getpixel((i+1,j+1))[1]]])
+            current_submatrix_b = np.array([[image.getpixel((i,j))[2], image.getpixel((i+1,j))[2]],[image.getpixel((i,j+1))[2],image.getpixel((i+1,j+1))[2]]])
+
+            def calculate_result(current_submatrix):
+                x = np.sum(np.multiply(Gx, current_submatrix))
+                y = np.sum(np.multiply(Gy, current_submatrix))
+                magnitude = np.sqrt(x**2 + y**2)
+                return magnitude
+
+            new_pixels[i,j] = (int(calculate_result(current_submatrix_r)), int(calculate_result(current_submatrix_g)), int(calculate_result(current_submatrix_b)))
+    return new_image
+
+def sobel_filter(org_image):
+    Gx = [[1,0,-1],[2,0,-2],[1,0,-1]]
+    Gy = [[1,2,1],[0,0,0],[-1,-2,-1]]
+    image = org_image.copy()
+    width, height = image.size
+
+    new_image = Image.new("RGB", (width, height))
+    new_pixels = new_image.load()
+
+    for i in range(1, width-1):
+        for j in range(1, height-1):
+            current_submatrix_r = np.array([
+                                [image.getpixel((i-1,j-1))[0],image.getpixel((i-1,j))[0], image.getpixel((i-1,j+1))[0]],
+                                [image.getpixel((i,j-1))[0],image.getpixel((i,j))[0],image.getpixel((i,j+1))[0]],
+                                [image.getpixel((i+1,j-1))[0], image.getpixel((i+1,j))[0], image.getpixel((i+1,j+1))[0]]])
+            current_submatrix_g = np.array([
+                                [image.getpixel((i-1,j-1))[1],image.getpixel((i-1,j))[1], image.getpixel((i-1,j+1))[1]],
+                                [image.getpixel((i,j-1))[1],image.getpixel((i,j))[1],image.getpixel((i,j+1))[1]],
+                                [image.getpixel((i+1,j-1))[1], image.getpixel((i+1,j))[1], image.getpixel((i+1,j+1))[1]]])
+            current_submatrix_b = np.array([
+                                [image.getpixel((i-1,j-1))[2],image.getpixel((i-1,j))[2], image.getpixel((i-1,j+1))[2]],
+                                [image.getpixel((i,j-1))[2],image.getpixel((i,j))[2],image.getpixel((i,j+1))[2]],
+                                [image.getpixel((i+1,j-1))[2], image.getpixel((i+1,j))[2], image.getpixel((i+1,j+1))[2]]])
+            def calculate_result(current_submatrix):
+                x = np.sum(np.multiply(Gx, current_submatrix))
+                y = np.sum(np.multiply(Gy, current_submatrix))
+                magnitude = np.sqrt(x**2 + y**2)
+                return magnitude
+
+            new_pixels[i,j] = (int(calculate_result(current_submatrix_r)), int(calculate_result(current_submatrix_g)), int(calculate_result(current_submatrix_b)))
+    return new_image
+
+def projections(org_image, grayscale):
+    image_np = np.array(org_image)
+
+    if(grayscale):
+        r = image_np[:,:,0]
+        r_sum_ver = np.sum(r, axis=0)
+        r_sum_hor = np.sum(r, axis=1)
+        plt.figure(figsize=(10, 6))
+        plt.subplot(2, 1, 1)
+        plt.plot( r_sum_hor, color='gray')
+        plt.title('Horizontal projection')
+        plt.subplot(2, 1, 2)
+        plt.plot(r_sum_ver, color='gray')
+        plt.subplots_adjust(hspace=0.4)  # Dostosowanie odległości między wykresami
+        plt.title('Vertical projection')
+        st.pyplot(plt)
+        return
+
+    # Rozdzielenie na kanały RGB
+    r = image_np[:, :, 0]
+    g = image_np[:, :, 1]
+    b = image_np[:, :, 2]
+
+    #suma w kolumnach
+    r_sum_ver = np.sum(r, axis=0)
+    g_sum_ver = np.sum(g, axis=0)
+    b_sum_ver = np.sum(b, axis=0)
+
+    # w wierszach
+    r_sum_hor = np.sum(r, axis=1)
+    g_sum_hor = np.sum(g, axis=1)
+    b_sum_hor = np.sum(b, axis=1)
+
+    plt.figure(figsize=(10, 6))
+
+    plt.subplot(2, 1, 1)
+    plt.plot( r_sum_hor, color='red', label='Red Channel')
+    plt.plot( g_sum_hor, color='green', label='Green Channel')
+    plt.plot( b_sum_hor, color='blue', label='Blue Channel')
+    plt.title('Horizontal projection')
+
+    # Projekcja pionowa
+    plt.subplot(2, 1, 2)
+    plt.plot(r_sum_ver, color='red', label='Red Channel')
+    plt.plot(g_sum_ver, color='green', label='Green Channel')
+    plt.plot(b_sum_ver, color='blue', label='Blue Channel')
+    plt.title('Vertical projection')
+
+    plt.subplots_adjust(hspace=0.4)  # Dostosowanie odległości między wykresami
+    st.pyplot(plt)
+    
+
+
+
+
+
+
 if __name__ == "__main__":
     import numpy as np
     from PIL import Image
-    from matplotlib.pyplot import plt
+    
     import streamlit as st
     image = Image.open("example_photo.jpeg")
-    image.show()
+    #image.show()
     '''
     bright_image = adjust_brightness(image,100.6)
     bright_image.show()
@@ -276,9 +392,7 @@ if __name__ == "__main__":
 
     # image_binarization=binarization(image, 90)
     # image_binarization.show()
-    blurred = average_filter(image, 3)
-    gaussian = sharpen_filter(blurred, 11)
-    gaussian.show()
+    #projections(image, True)
 
 
 

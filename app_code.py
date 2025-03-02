@@ -1,6 +1,7 @@
 import streamlit as st
 from algorithms import *
 from PIL import Image
+import numpy as np
 import io
 
 st.set_page_config(layout="wide")
@@ -21,6 +22,7 @@ with st.sidebar:
     if binarization_enabled:
         binarization_threshold = st.slider("Binarization threshold", min_value=0, max_value=255, step=1, value=128)
     average_filter_mask = st.slider("Choose blurr", min_value=1, max_value=100, value=1, step=2)
+    edges = st.radio('Choose edge detection method', ('Roberts cross','Sobel filter','None'), index=2)
 
 
 
@@ -52,6 +54,11 @@ with st.container():
             if average_filter_mask != 1:
                 processed_image = average_filter(processed_image, mask=average_filter_mask)
 
+            if edges == 'Roberts cross':
+                processed_image = roberts_cross(processed_image)
+            elif edges == "Sobel filter":
+                processed_image = sobel_filter(processed_image)
+
             st.image(processed_image, caption="Processed Image", width=400)
 
             buffered = io.BytesIO()
@@ -73,3 +80,10 @@ with st.container():
         if show_histogram:
             st.write("Histogram will be shown here:")
             histogram(processed_image, gray_scale=grayscale)
+
+        st.subheader('Horizontal and vertical projection')
+        show_proj = st.checkbox('Show plots',value=False)
+        if show_proj:
+            st.write('Projections plots will be shown')
+            projections(processed_image, grayscale = grayscale)
+
