@@ -92,7 +92,7 @@ with st.container():
 with st.container():
     st.subheader('Image Compression using SVD')
     if uploaded_file is not None:
-        image = Image.open(uploaded_file)
+        image = processed_image
         w, h = image.size
 
         k_max_r, k_max_g, k_max_b = get_no_singular_values(image)

@@ -379,12 +379,10 @@ def compression_svd(org_image, k):
 
     svd_compressed_r, svd_compressed_g, svd_compressed_b=svd_compress(r,k), svd_compress(g,k), svd_compress(b,k)
     compressed_image = np.zeros((r.shape[0], r.shape[1], 3))
-    compressed_image[:, :, 0] = svd_compressed_r
-    compressed_image[:, :, 1] = svd_compressed_g
-    compressed_image[:, :, 2] = svd_compressed_b
-
+    compressed_image[:, :, 0], compressed_image[:, :, 1], compressed_image[:, :, 2]= svd_compressed_r, svd_compressed_g, svd_compressed_b
     compressed_image = np.clip(compressed_image, 0, 255)
     compressed_image = compressed_image.astype(np.uint8)
+
     return compressed_image
 
 def get_no_singular_values(org_image):
