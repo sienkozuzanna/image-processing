@@ -2,6 +2,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import streamlit as st
 import numpy as np
+import io
 
 def adjust_brightness(org_image, brightness=0):
     image = org_image.copy()
@@ -362,17 +363,47 @@ def projections(org_image, grayscale):
 
     plt.subplots_adjust(hspace=0.4)  # Dostosowanie odległości między wykresami
     st.pyplot(plt)
-    
 
+#image compression using sigular value decomposition
+def compression_svd(org_image, k):
+    image_np = np.array(org_image)
+    r, g, b= image_np[:,:,0], image_np[:,:,1], image_np[:,:,2]
 
+    def svd_compress(channel, k):
+        U, S, Vt = np.linalg.svd(channel, full_matrices=False)
+        S_k = np.zeros((k, k))
+        np.fill_diagonal(S_k, S[:k]) #first k singular values
+        #print(U[:,:k].shape, S_k.shape, Vt[:k, :].shape)
+        compressed_channel = np.dot(U[:, :k], np.dot(S_k, Vt[:k, :]))
+        return compressed_channel
 
+    svd_compressed_r, svd_compressed_g, svd_compressed_b=svd_compress(r,k), svd_compress(g,k), svd_compress(b,k)
+    compressed_image = np.zeros((r.shape[0], r.shape[1], 3))
+    compressed_image[:, :, 0] = svd_compressed_r
+    compressed_image[:, :, 1] = svd_compressed_g
+    compressed_image[:, :, 2] = svd_compressed_b
 
+    compressed_image = np.clip(compressed_image, 0, 255)
+    compressed_image = compressed_image.astype(np.uint8)
+    return compressed_image
+
+def get_no_singular_values(org_image):
+    image_np = np.array(org_image)
+    r, g, b = image_np[:, :, 0], image_np[:, :, 1], image_np[:, :, 2]
+    S_r, S_g, S_b= np.linalg.svd(r, full_matrices=False)[1], np.linalg.svd(g, full_matrices=False)[1], np.linalg.svd(b, full_matrices=False)[1]
+    k_max_r, k_max_g, k_max_b = np.count_nonzero(S_r), np.count_nonzero(S_g), np.count_nonzero(S_b)
+    return k_max_r, k_max_g, k_max_b
+
+def get_image_bytes(image, format='PNG'):
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format=format)
+    return len(img_byte_arr.getvalue())
 
 
 if __name__ == "__main__":
     import numpy as np
     from PIL import Image
-    
+    import io
     import streamlit as st
     image = Image.open("example_photo.jpeg")
     #image.show()

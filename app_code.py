@@ -3,6 +3,7 @@ from algorithms import *
 from PIL import Image
 import numpy as np
 import io
+import pandas as pd
 
 st.set_page_config(layout="wide")
 
@@ -86,4 +87,43 @@ with st.container():
         if show_proj:
             st.write('Projections plots will be shown')
             projections(processed_image, grayscale = grayscale)
+
+
+with st.container():
+    st.subheader('Image Compression using SVD')
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        w, h = image.size
+
+        k_max_r, k_max_g, k_max_b = get_no_singular_values(image)
+        max_k = min(k_max_r, k_max_g, k_max_b)
+        print(max_k)
+        num_steps=7
+        #orders = np.logspace(np.log10(1), np.log10(max_k), num_steps, base=2, dtype=int)
+        #orders = [1, 5, 10, 20, 50, 100, 300, 500, max_k]
+        #orders = np.linspace(5, max_k, num_steps, dtype=int)
+        orders = np.logspace(np.log10(1), np.log10(max_k), num_steps, dtype=int)
+
+        fig, axes = plt.subplots(2, 4, figsize=(20, 10))
+        axes = axes.flatten()
+
+        axes[0].imshow(image)
+        axes[0].axis('off')
+        axes[0].set_title("Original Image")
+        image_sizes=[]
+
+        for i, order in enumerate(orders):
+            compressed_image = compression_svd(image, order)
+            axes[i + 1].imshow(compressed_image)
+            axes[i + 1].axis('off')
+            axes[i + 1].set_title(f"Number of k singular values = {order}")
+            compressed_image_pil = Image.fromarray(np.uint8(np.around(compressed_image)))
+            compressed_size = get_image_bytes(compressed_image_pil)/1024/1024
+            image_sizes.append((order, compressed_size))
+
+        plt.subplots_adjust(hspace=0.2, wspace=0.2)
+        st.pyplot(fig)
+
+        df_sizes = pd.DataFrame(image_sizes, columns=["Number of k", "Image Size (Mb)"])
+        st.table(df_sizes.set_index("Number of k"))
 
