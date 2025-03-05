@@ -1,5 +1,6 @@
 import streamlit as st
 from algorithms import *
+from algorithms2 import *
 from PIL import Image
 import numpy as np
 import io
@@ -15,7 +16,7 @@ with st.container():
 with st.sidebar:
     st.header("Image Manipulation Options")
 
-    grayscale = st.checkbox("Convert to gray")
+    grayscale = st.radio('Conver to grayscale', options=('Human Eye', 'Naive', 'Decomposition','None'),index=3)
     brightness = st.slider("Adjust brightness", min_value=-255, max_value=255, value=0)
     contrast = st.slider("Adjust contrast", min_value=-5.0, max_value=5.0, value=1.0, step=0.1)
     negative = st.checkbox("Negative")
@@ -42,8 +43,12 @@ with st.container():
             processed_image = image
             w, h = image.size
 
-            if grayscale:
+            if grayscale == 'Human Eye':
                 processed_image = convert_to_gray(processed_image)
+            elif grayscale == 'Naive':
+                processed_image = convert_to_gray_naive(processed_image)
+            elif grayscale =='Decomposition':
+                processed_image = convert_to_gray_decomp(processed_image)
             if brightness != 0:
                 processed_image = adjust_brightness(processed_image, brightness)
             if contrast != 1.0:
