@@ -134,3 +134,4 @@ with st.container():
         df_sizes = pd.DataFrame(image_sizes, columns=["Number of k (SVD components)", "Image Size (Mb)"])
         st.table(df_sizes.set_index("Number of k (SVD components)"))
 
+    
