@@ -95,14 +95,14 @@ with st.container():
 
 
 with st.container():
-    st.subheader('Image Compression using SVD')
+    st.subheader('Image Compression using SVD decomposition')
     if uploaded_file is not None:
         image = processed_image
         w, h = image.size
 
         k_max_r, k_max_g, k_max_b = get_no_singular_values(image)
         max_k = min(k_max_r, k_max_g, k_max_b)
-        print(max_k)
+        #print(max_k)
         num_steps=7
         #orders = np.logspace(np.log10(1), np.log10(max_k), num_steps, base=2, dtype=int)
         #orders = [1, 5, 10, 20, 50, 100, 300, 500, max_k]
@@ -129,6 +129,8 @@ with st.container():
         plt.subplots_adjust(hspace=0.2, wspace=0.2)
         st.pyplot(fig)
 
-        df_sizes = pd.DataFrame(image_sizes, columns=["Number of k", "Image Size (Mb)"])
-        st.table(df_sizes.set_index("Number of k"))
+        st.pyplot(visualize_compression_errors(processed_image, orders))
+
+        df_sizes = pd.DataFrame(image_sizes, columns=["Number of k (SVD components)", "Image Size (Mb)"])
+        st.table(df_sizes.set_index("Number of k (SVD components)"))
 

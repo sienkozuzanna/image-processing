@@ -392,10 +392,56 @@ def get_no_singular_values(org_image):
     k_max_r, k_max_g, k_max_b = np.count_nonzero(S_r), np.count_nonzero(S_g), np.count_nonzero(S_b)
     return k_max_r, k_max_g, k_max_b
 
-def get_image_bytes(image, format='PNG'):
+def get_image_bytes(image, format='JPEG'):
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format=format)
     return len(img_byte_arr.getvalue())
+
+def compression_mse(org_image, compressed_image):
+    org_image = np.array(org_image)
+    compressed_image = np.array(compressed_image)
+    if org_image.shape[2] != compressed_image.shape[2]:
+        #RGBA to RGB
+        if org_image.shape[2] == 4:
+            org_image = org_image[:, :, :3]
+        elif compressed_image.shape[2] == 4:
+            compressed_image = compressed_image[:, :, :3]
+    n=float(org_image.shape[0]*org_image.shape[1]*org_image.shape[2])
+    error=np.sum((org_image.astype("float")-compressed_image.astype("float"))**2)
+    return error/n
+
+def compression_psnr(org_image, compressed_image):
+    max_pixel=np.max(org_image)
+    mse=compression_mse(org_image, compressed_image)
+    if mse == 0: float('inf')
+    return 20 * np.log10(max_pixel / np.sqrt(mse))
+
+def visualize_compression_errors(org_image, k_values):
+    mse_val, psnr_val=[], []
+    for k in k_values:
+        compressed_image = compression_svd(org_image, k)
+        mse_val.append(compression_mse(org_image, compressed_image))
+        psnr_val.append(compression_psnr(org_image, compressed_image))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+
+    # mse plot
+    ax1.plot(k_values, mse_val, marker='o', color='r', label="MSE")
+    ax1.set_title("MSE vs k-value")
+    ax1.set_xlabel("k (number of SVD components)")
+    ax1.set_ylabel("MSE")
+    ax1.grid(True)
+    ax1.legend()
+
+    #psnr plot
+    ax2.plot(k_values, psnr_val, marker='o', color='b', label="PSNR")
+    ax2.set_title("PSNR vs k-value")
+    ax2.set_xlabel("k (number of SVD components)")
+    ax2.set_ylabel("PSNR (dB)")
+    ax2.grid(True)
+    ax2.legend()
+
+    plt.subplots_adjust(hspace=0.2, wspace=0.2)
+    return fig
 
 
 if __name__ == "__main__":
