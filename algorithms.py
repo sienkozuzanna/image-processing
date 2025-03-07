@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 import numpy as np
 import io
+import math
 
 def adjust_brightness(org_image, brightness=0):
     image = org_image.copy()
@@ -443,12 +444,91 @@ def visualize_compression_errors(org_image, k_values):
     plt.subplots_adjust(hspace=0.2, wspace=0.2)
     return fig
 
+def DCT_matrix(N=8): #N=8 for image compression
+    #creating NxN DTC matrix
+    T=np.zeros((N,N))
+    for i in range(N):
+        for j in range(N):
+            if i == 0:
+                T[i, j] = 1 / np.sqrt(N)
+            else:
+                T[i, j] = np.sqrt(2 / N) * np.cos(((2 * j + 1) * i * np.pi) / (2 * N))
+    return T
+
+def DCT(org_image):
+    image_np = np.array(org_image)
+    w, h, channels = image_np.shape
+    if channels == 4: channels = 3
+
+    T_w = DCT_matrix(8)
+    T_h = DCT_matrix(8)
+    M = image_np - 128
+
+    quantized_matrix = np.zeros_like(M)
+    quantization_matrix = np.array([
+        [16, 11, 10, 16, 24, 40, 51, 61],
+        [12, 12, 14, 19, 26, 58, 60, 55],
+        [14, 13, 16, 24, 40, 57, 69, 56],
+        [14, 17, 22, 29, 51, 87, 80, 62],
+        [18, 22, 37, 56, 68, 109, 103, 77],
+        [24, 35, 55, 64, 81, 104, 113, 92],
+        [49, 64, 78, 87, 103, 121, 120, 101],
+        [72, 92, 95, 98, 112, 100, 103, 99]
+    ])
+
+    for c in range(channels):
+        for i in range(0, w, 8):
+            for j in range(0, h, 8):
+                block = M[i:i + 8, j:j + 8, c]
+                if block.shape == (8, 8):
+                    D = np.dot(np.dot(T_w, block), T_h.T)
+                    quantized_block = np.round(D / quantization_matrix)
+                    quantized_matrix[i:i + 8, j:j + 8, c] = quantized_block
+
+    quantized_matrix = np.clip(quantized_matrix + 128, 0, 255).astype(np.uint8)
+    return quantized_matrix
+
+
+def IDCT_matrix(N):
+    T_inv = np.zeros((N, N))
+    for i in range(N):
+        for j in range(N):
+            if i == 0:
+                T_inv[i, j] = 1 / np.sqrt(N)
+            else:
+                T_inv[i, j] = np.sqrt(2 / N) * np.cos(np.pi / N * (2 * j + 1) * i / 2)
+    return T_inv.T
+
+
+def IDCT(org_image):
+    image_np = np.array(org_image)
+    w, h, channels = image_np.shape
+    if channels == 4: channels = 3
+
+    T_w = DCT_matrix(8)
+    T_h = DCT_matrix(8)
+    M = image_np - 128
+
+    idct_matrix = np.zeros_like(M)
+
+    for c in range(channels):
+        for i in range(0, w, 8):
+            for j in range(0, h, 8):
+                block = M[i:i + 8, j:j + 8, c]
+                if block.shape == (8, 8):
+                    D = np.dot(np.dot(T_w.T, block), T_h)
+                    idct_matrix[i:i + 8, j:j + 8, c] = D
+
+    idct_matrix = np.clip(idct_matrix + 128, 0, 255).astype(np.uint8)
+    return idct_matrix
+
 
 if __name__ == "__main__":
     import numpy as np
     from PIL import Image
     import io
     import streamlit as st
+    import math
     image = Image.open("example_photo.jpeg")
     #image.show()
     '''
