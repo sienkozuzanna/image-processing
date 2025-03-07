@@ -4,6 +4,7 @@ import streamlit as st
 import numpy as np
 import io
 
+# ----------------------------- Method to adjust brightness -----------------------------------------
 def adjust_brightness(org_image, brightness=0):
     image = org_image.copy()
     width,height = image.size
@@ -20,6 +21,8 @@ def adjust_brightness(org_image, brightness=0):
             new_pixel_val = tuple(int(min(max(val,0), 255)) for val in new_pixel_val) #value of each channel can be 0-255
             image.putpixel((w,h), new_pixel_val)
     return image
+
+#-----------------------------Different methods for gray conversion-------------------------------------
 
 def convert_to_gray(org_image):
     image = org_image.copy()
@@ -41,6 +44,47 @@ def convert_to_gray(org_image):
             image.putpixel((w,h), new_pixel_val)
     return image
 
+def convert_to_gray_naive(org_image):
+    image = org_image.copy()
+    width, height = image.size
+    for h in range(height):
+        for w in range(width):
+            pixel = image.getpixel((w,h))
+            if(len(pixel)==4):
+                r,g,b,a = pixel
+                gray = (r+g+b)/3
+                gray = int(gray)
+                new_pixel_val = (gray,gray,gray, a)
+            else:
+                r,g,b = pixel
+                gray = (r+g+b)/3
+                gray = int(gray)
+                new_pixel_val = (gray,gray,gray)
+
+            image.putpixel((w,h), new_pixel_val)
+    return image
+
+def convert_to_gray_decomp(org_image):
+    image = org_image.copy()
+    width, height = image.size
+    for h in range(height):
+        for w in range(width):
+            pixel = image.getpixel((w,h))
+            if(len(pixel)==4):
+                r,g,b,a = pixel
+                gray = min(r,g,b)
+                gray = int(gray)
+                new_pixel_val = (gray,gray,gray, a)
+            else:
+                r,g,b = pixel
+                gray = min(r,g,b)
+                gray = int(gray)
+                new_pixel_val = (gray,gray,gray)
+
+            image.putpixel((w,h), new_pixel_val)
+    return image
+
+#-----------------------------------Method for adjusting contrast-----------------------------------
 def adjust_contrast(org_image, contrast_factor):
     #contrast_factor > 1, contrast increases
     #contrast_factor < 1, contrast decreases
@@ -70,6 +114,7 @@ def adjust_contrast(org_image, contrast_factor):
             image.putpixel((w,h), new_pixel_val)
     return image
 
+# ------------------------------- Method for getting a negative ------------------------------
 def negative_image(org_image):
     image = org_image.copy()
     width, height = image.size
@@ -84,6 +129,7 @@ def negative_image(org_image):
                 image.putpixel((w, h), (255 - r, 255 - g, 255 - b))
     return image
 
+# --------------------------Method for binarization-----------------------------------------
 def binarization(org_image, threshold):
     #first convert to gray
     image=convert_to_gray(org_image.copy())
@@ -98,14 +144,22 @@ def binarization(org_image, threshold):
                 image.putpixel((w, h), (new_pixel_value, new_pixel_value, new_pixel_value))
     return image
 
+#------------------------------ Filter methods -------------------------------------------
+def padding_edges(image: Image.Image, middle: int):
+    """Dodaje padding do obrazu, kopiując najbliższe piksele na krawędziach."""
+    np_image = np.array(image)
+    padded_array = np.pad(np_image, ((middle, middle), (middle, middle), (0, 0)), mode='edge')
+    return Image.fromarray(padded_array)
+
 def average_filter(org_image, mask):
     mask_size = mask
     middle = mask_size//2
-    image = org_image.copy()
-    width, height = image.size
-    pixels = image.load()
 
-    new_image = Image.new("RGB", (width, height))
+    padded_image = padding_edges(org_image, middle)
+    width, height = padded_image.size
+    pixels = padded_image.load()
+
+    new_image = padded_image.copy()
     new_pixels = new_image.load()
 
     for x in range(middle, width-1):
@@ -127,17 +181,55 @@ def average_filter(org_image, mask):
             avg_b = sum_b//count
 
             new_pixels[x,y] = (avg_r, avg_g, avg_b)
-    return new_image
+    
+    cropped_image = new_image.crop((middle, middle, width - middle, height - middle))
+    return cropped_image
 
-def gaussian_filter(org_image, mask_size, sigma):
-    image = org_image.copy()
+def median_filter(org_image, mask):
+    mask_size = mask
+    middle = mask_size//2
 
-    width,height = image.size
-    pixels = image.load()
+    padded_image = padding_edges(org_image, middle)
+    width, height = padded_image.size
+    pixels = padded_image.load()
 
-    new_image = Image.new("RGB", (width, height))
+    new_image = padded_image.copy()
     new_pixels = new_image.load()
 
+    for x in range(middle, width-1):
+        for y in range(middle, height-1):
+            r_vals=[]
+            g_vals=[]
+            b_vals=[]
+            for i in range(-middle, middle+1):
+                for j in range(-middle, middle+1):
+                    if 0 <= x + i < width and 0 <= y + j < height:
+                        r,g,b = pixels[x+i, y+j]
+                        r_vals.append(r)
+                        g_vals.append(g)
+                        b_vals.append(b)
+            med_r = np.median(r_vals)
+            med_g = np.median(g_vals)
+            med_b = np.median(b_vals)
+
+            new_pixels[x,y] = (int(med_r), int(med_g), int(med_b))
+
+    cropped_image = new_image.crop((middle, middle, width - middle, height - middle))
+    return cropped_image
+
+def gaussian_filter(org_image, sigma):
+    org_width, org_height = org_image.size
+    if(min(org_width, org_height)<9 and min(org_width, org_height)>=3):
+        mask_size=3
+    else:
+        mask_size = 9
+    middle = mask_size//2
+    padded_image = padding_edges(org_image, middle)
+    width, height = padded_image.size
+    pixels = padded_image.load()
+    new_image = padded_image.copy()
+    new_pixels = new_image.load()
+    
     def create_kernel(size, sigma=sigma):
         kernel = np.fromfunction(
         lambda x, y: (1/ (2 * np.pi * sigma ** 2)) * 
@@ -147,7 +239,6 @@ def gaussian_filter(org_image, mask_size, sigma):
     
     kernel = create_kernel(mask_size)
     middle = mask_size//2
-
     for x in range(middle, width-middle):
         for y in range(middle, height-middle):
             sum_r = sum_g = sum_b = 0
@@ -162,13 +253,17 @@ def gaussian_filter(org_image, mask_size, sigma):
                         sum_b += b * weight
                         count+=1
             new_pixels[x,y] = (int(sum_r), int(sum_g), int(sum_b))
-    return new_image
+    cropped_image = new_image.crop((middle, middle, width - middle, height - middle))
+    return cropped_image
 
-def sharpen_filter(org_image, middle):
-    image = org_image.copy()
-    width, height = image.size
-    pixels = image.load()
-    new_image = Image.new("RGB", (width, height))
+
+def sharpen_filter(org_image, middle_el_weight):
+    mask_size =3
+    middle = mask_size//2
+    padded_image = padding_edges(org_image, middle)
+    width, height = padded_image.size
+    pixels = padded_image.load()
+    new_image = padded_image.copy()
     new_pixels = new_image.load()
 
     def create_kernel(middle,size=3):
@@ -180,15 +275,13 @@ def sharpen_filter(org_image, middle):
             for j in range(size):
                 if i != size // 2 or j != size // 2:
                     kernel[i][j] = -1
-
         return kernel
     
-    mask = create_kernel(middle)
-    middle = 3//2
+    mask = create_kernel(middle_el_weight)
+    
     for x in range(middle, width-middle):
         for y in range(middle, height-middle):
             r_total, g_total, b_total = 0, 0, 0
-            
             for i in range(-middle, middle+1):
                 for j in range(-middle, middle+1):
                     if 0 <= x + i < width and 0 <= y + j < height:
@@ -199,61 +292,10 @@ def sharpen_filter(org_image, middle):
                         b_total += b * weight
   
             new_pixels[x,y] = (min(max(r_total, 0), 255), min(max(g_total, 0), 255), min(max(b_total, 0), 255))
-    return new_image
+    cropped_image = new_image.crop((middle, middle, width - middle, height - middle))
+    return cropped_image
 
-    
-def histogram(org_image, gray_scale):
-    image = org_image.copy()
-
-    def compute_histogram(image, gray_scale=False):
-        hist_r, hist_g, hist_b, histogram_gray = [0] * 256, [0] * 256, [0] * 256, [0] * 256
-        width, height = image.size
-
-        for h in range(height):
-            for w in range(width):
-                pixel = image.getpixel((w, h))
-
-                if gray_scale:
-                    gray_value = pixel[0]
-                    histogram_gray[gray_value] += 1
-                else:
-                    r, g, b = pixel[0], pixel[1], pixel[2]
-                    hist_r[r] += 1
-                    hist_g[g] += 1
-                    hist_b[b] += 1
-
-        if gray_scale:
-            return histogram_gray
-        else:
-            return hist_r, hist_g, hist_b
-
-    if gray_scale:
-        histogram = compute_histogram(image, gray_scale=True)
-
-        plt.figure(figsize=(10, 6))
-        plt.hist(range(256), bins=256, weights=histogram, color="black", alpha=0.7, edgecolor="gray")
-        plt.title("Grayscale Histogram", fontsize=16, fontweight='bold')
-        plt.xlabel("Brightness Level", fontsize=14)
-        plt.ylabel("Number of Pixels", fontsize=14)
-        plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
-        plt.tight_layout()
-        st.pyplot(plt)
-
-    else:
-        hist_r, hist_g, hist_b = compute_histogram(image)
-
-        plt.figure(figsize=(10, 6))
-        plt.bar(range(256), hist_r, color="red", alpha=0.7, width=1.0, label="Red", zorder=3)
-        plt.bar(range(256), hist_g, color="green", alpha=0.7, width=1.0, label="Green", zorder=2)
-        plt.bar(range(256), hist_b, color="blue", alpha=0.7, width=1.0, label="Blue", zorder=1)
-
-        plt.title("RGB Histogram", fontsize=16, fontweight='bold')
-        plt.xlabel("Brightness Level", fontsize=14)
-        plt.ylabel("Number of Pixels", fontsize=14)
-        plt.legend(loc='upper right', fontsize=12)
-        plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
-        plt.tight_layout()
-        st.pyplot(plt)
+#--------------------------- Edge detection methods---------------------------------------
 
 def roberts_cross(org_image):
 
@@ -262,7 +304,6 @@ def roberts_cross(org_image):
 
     image = org_image.copy()
     width, height = image.size
-
     new_image = Image.new("RGB", (width, height))
     new_pixels = new_image.load()
 
@@ -271,7 +312,6 @@ def roberts_cross(org_image):
             current_submatrix_r = np.array([[image.getpixel((i,j))[0], image.getpixel((i+1,j))[0]],[image.getpixel((i,j+1))[0],image.getpixel((i+1,j+1))[0]]])
             current_submatrix_g = np.array([[image.getpixel((i,j))[1], image.getpixel((i+1,j))[1]],[image.getpixel((i,j+1))[1],image.getpixel((i+1,j+1))[1]]])
             current_submatrix_b = np.array([[image.getpixel((i,j))[2], image.getpixel((i+1,j))[2]],[image.getpixel((i,j+1))[2],image.getpixel((i+1,j+1))[2]]])
-
             def calculate_result(current_submatrix):
                 x = np.sum(np.multiply(Gx, current_submatrix))
                 y = np.sum(np.multiply(Gy, current_submatrix))
@@ -286,7 +326,6 @@ def sobel_filter(org_image):
     Gy = [[1,2,1],[0,0,0],[-1,-2,-1]]
     image = org_image.copy()
     width, height = image.size
-
     new_image = Image.new("RGB", (width, height))
     new_pixels = new_image.load()
 
@@ -313,135 +352,6 @@ def sobel_filter(org_image):
             new_pixels[i,j] = (int(calculate_result(current_submatrix_r)), int(calculate_result(current_submatrix_g)), int(calculate_result(current_submatrix_b)))
     return new_image
 
-def projections(org_image, grayscale):
-    image_np = np.array(org_image)
-
-    if(grayscale):
-        r = image_np[:,:,0]
-        r_sum_ver = np.sum(r, axis=0)
-        r_sum_hor = np.sum(r, axis=1)
-        plt.figure(figsize=(10, 6))
-        plt.subplot(2, 1, 1)
-        plt.plot( r_sum_hor, color='gray')
-        plt.title('Horizontal projection')
-        plt.subplot(2, 1, 2)
-        plt.plot(r_sum_ver, color='gray')
-        plt.subplots_adjust(hspace=0.4)  # Dostosowanie odległości między wykresami
-        plt.title('Vertical projection')
-        st.pyplot(plt)
-        return
-
-    # Rozdzielenie na kanały RGB
-    r = image_np[:, :, 0]
-    g = image_np[:, :, 1]
-    b = image_np[:, :, 2]
-
-    #suma w kolumnach
-    r_sum_ver = np.sum(r, axis=0)
-    g_sum_ver = np.sum(g, axis=0)
-    b_sum_ver = np.sum(b, axis=0)
-
-    # w wierszach
-    r_sum_hor = np.sum(r, axis=1)
-    g_sum_hor = np.sum(g, axis=1)
-    b_sum_hor = np.sum(b, axis=1)
-
-    plt.figure(figsize=(10, 6))
-
-    plt.subplot(2, 1, 1)
-    plt.plot( r_sum_hor, color='red', label='Red Channel')
-    plt.plot( g_sum_hor, color='green', label='Green Channel')
-    plt.plot( b_sum_hor, color='blue', label='Blue Channel')
-    plt.title('Horizontal projection')
-
-    # Projekcja pionowa
-    plt.subplot(2, 1, 2)
-    plt.plot(r_sum_ver, color='red', label='Red Channel')
-    plt.plot(g_sum_ver, color='green', label='Green Channel')
-    plt.plot(b_sum_ver, color='blue', label='Blue Channel')
-    plt.title('Vertical projection')
-
-    plt.subplots_adjust(hspace=0.4)  # Dostosowanie odległości między wykresami
-    st.pyplot(plt)
-
-#image compression using sigular value decomposition
-def compression_svd(org_image, k):
-    image_np = np.array(org_image)
-    r, g, b= image_np[:,:,0], image_np[:,:,1], image_np[:,:,2]
-
-    def svd_compress(channel, k):
-        U, S, Vt = np.linalg.svd(channel, full_matrices=False)
-        S_k = np.zeros((k, k))
-        np.fill_diagonal(S_k, S[:k]) #first k singular values
-        #print(U[:,:k].shape, S_k.shape, Vt[:k, :].shape)
-        compressed_channel = np.dot(U[:, :k], np.dot(S_k, Vt[:k, :]))
-        return compressed_channel
-
-    svd_compressed_r, svd_compressed_g, svd_compressed_b=svd_compress(r,k), svd_compress(g,k), svd_compress(b,k)
-    compressed_image = np.zeros((r.shape[0], r.shape[1], 3))
-    compressed_image[:, :, 0], compressed_image[:, :, 1], compressed_image[:, :, 2]= svd_compressed_r, svd_compressed_g, svd_compressed_b
-    compressed_image = np.clip(compressed_image, 0, 255)
-    compressed_image = compressed_image.astype(np.uint8)
-
-    return compressed_image
-
-def get_no_singular_values(org_image):
-    image_np = np.array(org_image)
-    r, g, b = image_np[:, :, 0], image_np[:, :, 1], image_np[:, :, 2]
-    S_r, S_g, S_b= np.linalg.svd(r, full_matrices=False)[1], np.linalg.svd(g, full_matrices=False)[1], np.linalg.svd(b, full_matrices=False)[1]
-    k_max_r, k_max_g, k_max_b = np.count_nonzero(S_r), np.count_nonzero(S_g), np.count_nonzero(S_b)
-    return k_max_r, k_max_g, k_max_b
-
-def get_image_bytes(image, format='JPEG'):
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format=format)
-    return len(img_byte_arr.getvalue())
-
-def compression_mse(org_image, compressed_image):
-    org_image = np.array(org_image)
-    compressed_image = np.array(compressed_image)
-    if org_image.shape[2] != compressed_image.shape[2]:
-        #RGBA to RGB
-        if org_image.shape[2] == 4:
-            org_image = org_image[:, :, :3]
-        elif compressed_image.shape[2] == 4:
-            compressed_image = compressed_image[:, :, :3]
-    n=float(org_image.shape[0]*org_image.shape[1]*org_image.shape[2])
-    error=np.sum((org_image.astype("float")-compressed_image.astype("float"))**2)
-    return error/n
-
-def compression_psnr(org_image, compressed_image):
-    max_pixel=np.max(org_image)
-    mse=compression_mse(org_image, compressed_image)
-    if mse == 0: float('inf')
-    return 20 * np.log10(max_pixel / np.sqrt(mse))
-
-def visualize_compression_errors(org_image, k_values):
-    mse_val, psnr_val=[], []
-    for k in k_values:
-        compressed_image = compression_svd(org_image, k)
-        mse_val.append(compression_mse(org_image, compressed_image))
-        psnr_val.append(compression_psnr(org_image, compressed_image))
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
-
-    # mse plot
-    ax1.plot(k_values, mse_val, marker='o', color='r', label="MSE")
-    ax1.set_title("MSE vs k-value")
-    ax1.set_xlabel("k (number of SVD components)")
-    ax1.set_ylabel("MSE")
-    ax1.grid(True)
-    ax1.legend()
-
-    #psnr plot
-    ax2.plot(k_values, psnr_val, marker='o', color='b', label="PSNR")
-    ax2.set_title("PSNR vs k-value")
-    ax2.set_xlabel("k (number of SVD components)")
-    ax2.set_ylabel("PSNR (dB)")
-    ax2.grid(True)
-    ax2.legend()
-
-    plt.subplots_adjust(hspace=0.2, wspace=0.2)
-    return fig
 
 
 if __name__ == "__main__":
@@ -451,23 +361,8 @@ if __name__ == "__main__":
     import streamlit as st
     image = Image.open("example_photo.jpeg")
     #image.show()
-    '''
-    bright_image = adjust_brightness(image,100.6)
-    bright_image.show()
-
-    gray_image = convert_to_gray(image)
-    gray_image.show()
-    
-    contrast_image = adjust_contrast(image, 1.6)
-    contrast_image.show()
-
-    negative_image = negative_image(image)
-    negative_image.show()
-    '''
-
-    # image_binarization=binarization(image, 90)
-    # image_binarization.show()
-    #projections(image, True)
+    blurred = sharpen_filter(image, 11)
+    blurred.show()
 
 
 
