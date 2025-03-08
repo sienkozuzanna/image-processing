@@ -473,9 +473,9 @@ if __name__ == "__main__":
     import io
     import streamlit as st
     import math
-    image = Image.open("example_photo.jpeg")
+    image = Image.open("photo2.jpg")
     #image.show()
-    blurred = sharpen_filter(image, 11)
+    blurred = median_filter(image, 11)
     blurred.show()
 
 

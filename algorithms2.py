@@ -102,8 +102,8 @@ def projections(org_image):
 
     # all channels the same 
     r = image_np[:,:,0]
-    r_sum_ver = np.sum(r, axis=0)
-    r_sum_hor = np.sum(r, axis=1)
+    r_sum_hor = np.sum(r, axis=0)
+    r_sum_ver = np.sum(r, axis=1)
 
     fig, axes = plt.subplots(2, 1, figsize=(6, 8))
     axes[0].bar(range(len(r_sum_hor)) ,r_sum_hor, color='darkgray')

@@ -118,6 +118,7 @@ with st.container():
             )
 
 with st.container():
+        resize_enabled=False
         if uploaded_file is not None:
             st.subheader('Resizing')
             resize_enabled = st.checkbox('Resize photo', value=False)
