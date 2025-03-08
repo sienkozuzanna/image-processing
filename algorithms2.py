@@ -4,7 +4,41 @@ import streamlit as st
 import numpy as np
 from algorithms import *
 
+#--------------------------------------Resizing------------------------------------------
+def resize_width(org_image, width_mult):
+    image = org_image.copy()
+    old_width, old_height = image.size
+    new_width = int(old_width*width_mult)
+    new_image = Image.new("RGB", (new_width, old_height))
+    for x in range(new_width):
+        x_old = int(x/width_mult)
+        for y in range(old_height):
+            new_image.putpixel((x, y), image.getpixel((x_old, y)))
+    return new_image
 
+def resize_height(org_image, height_mult):
+    image = org_image.copy()
+    old_width, old_height = image.size
+    new_height = int(old_height*height_mult)
+    new_image = Image.new("RGB", (old_width, new_height))
+    for x in range(old_width):
+        for y in range(new_height):
+            y_old = int(y/height_mult)
+            new_image.putpixel((x, y), image.getpixel((x, y_old)))
+    return new_image
+
+def resize_whole(org_image, mult):
+    image = org_image.copy()
+    old_width, old_height = image.size
+    new_height = int(old_height*mult)
+    new_width = int(old_width* mult)
+    new_image = Image.new("RGB", (new_width, new_height))
+    for x in range(new_width):
+        x_old = int(x/mult)
+        for y in range(new_height):
+            y_old = int(y/mult)
+            new_image.putpixel((x, y), image.getpixel((x_old, y_old)))
+    return new_image
 #-----------------------------------------Plot methods------------------------------------------
 
 def histogram(org_image, gray_scale):
@@ -159,6 +193,16 @@ def visualize_compression_errors(org_image, k_values):
     plt.subplots_adjust(hspace=0.2, wspace=0.2)
     return fig
 
+if __name__ == "__main__":
+    import numpy as np
+    from PIL import Image
+    import io
+    import streamlit as st
+    import math
+    image = Image.open("example_photo.jpeg")
+    #image.show()
+    resized = resize_whole(image, 0.5)
+    resized.show()
 
     
 

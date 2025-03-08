@@ -35,6 +35,20 @@ with st.sidebar:
         med_mask = st.slider("Choose median filter mask size", min_value=1, max_value=int(min(0.1*width, 0.1*height)), value=1, step=2)
     elif blurr_choice=='Gaussian filter':
         sigma = st.slider('Choose sigma value for Gaussian filter', min_value=1, max_value = 30, value=1, step=1)
+    custom_filter_enabled = st.checkbox('Create custom filter')
+    if custom_filter_enabled:
+        w11 = st.slider('Weight in cell (0,0)', min_value=-9.0, max_value=9.0, step=0.1)
+        w12 = st.slider('Weight in cell (0,1)', min_value=-9.0, max_value=9.0, step=0.1)
+        w13 = st.slider('Weight in cell (0,2)', min_value=-9.0, max_value=9.0, step=0.1)
+        st.write('------------------------')
+        w21 = st.slider('Weight in cell (1,0)', min_value=-9.0, max_value=9.0, step=0.1)
+        w22 = st.slider('Weight in cell (1,1)', min_value=-9.0, max_value=9.0, step=0.1)
+        w23 = st.slider('Weight in cell (1,2)', min_value=-9.0, max_value=9.0, step=0.1)
+        st.write('------------------------')
+        w31 = st.slider('Weight in cell (2,0)', min_value=-9.0, max_value=9.0, step=0.1)
+        w32 = st.slider('Weight in cell (2,1)', min_value=-9.0, max_value=9.0, step=0.1)
+        w33 = st.slider('Weight in cell (2,2)', min_value=-9.0, max_value=9.0, step=0.1)
+
     sharpen_enabled = st.checkbox('Sharpen image')
     if sharpen_enabled:
         sharpen = st.slider('Chose sharpening weight', min_value=9, max_value=30, value=9, step=2)
@@ -51,6 +65,8 @@ with st.container():
         if uploaded_file is not None:
             image = Image.open(uploaded_file)
             st.image(image, caption="Original Image", width=330)
+        
+        
 
     with col2:
         if uploaded_file is not None:
@@ -77,6 +93,8 @@ with st.container():
                 processed_image = median_filter(processed_image, mask=med_mask)
             elif blurr_choice =='Gaussian filter':
                 processed_image = gaussian_filter(processed_image, sigma=sigma)
+            if custom_filter_enabled:
+                processed_image = custom_filter(processed_image, w11,w12,w13,w21,w22,w23,w31,w32,w33)
 
             if sharpen_enabled:
                 processed_image = sharpen_filter(processed_image, sharpen)
@@ -100,19 +118,40 @@ with st.container():
             )
 
 with st.container():
-    if uploaded_file is not None:
-        st.subheader("Histogram Section")
-        show_histogram = st.checkbox("Show Histogram", value=False)
+        if uploaded_file is not None:
+            st.subheader('Resizing')
+            resize_enabled = st.checkbox('Resize photo', value=False)
+            if resize_enabled:
+                resized_img=processed_image
+                width_slider = st.slider('Width:', min_value=0.5, max_value=2.0, step=0.1, value=1.0)
+                height_slider = st.slider('Height:', min_value=0.5, max_value=2.0, step=0.1, value=1.0)
+                whole_slider = st.slider('Whole picture:', min_value=0.5, max_value=2.0, step=0.1, value=1.0)
+                if(width_slider!=1):
+                    resized_img = resize_width(processed_image, width_slider)
+                if(height_slider!=1):
+                    resized_img = resize_height(processed_image, height_slider)
+                if(whole_slider!=1):
+                    resized_img = resize_whole(processed_image, whole_slider)
+with st.container():
+    col1, col2,col3 = st.columns([1, 5,1])
+    with col2:
+        if not resize_enabled:
+            resized_img=None
+        if resized_img is not None:
+            st.image(resized_img, caption="Resized Image")
+with st.container():
+    st.subheader("Histogram Section")
+    show_histogram = st.checkbox("Show Histogram", value=False)
 
-        if show_histogram:
-            st.write("Histogram will be shown here:")
-            histogram(processed_image, gray_scale=grayscale)
+    if show_histogram:
+        st.write("Histogram will be shown here:")
+        histogram(processed_image, gray_scale=grayscale)
 
-        st.subheader('Horizontal and vertical projection')
-        show_proj = st.checkbox('Show plots',value=False)
-        if show_proj:
-            st.write('Projections plots will be shown')
-            projections(processed_image)
+    st.subheader('Horizontal and vertical projection')
+    show_proj = st.checkbox('Show plots',value=False)
+    if show_proj:
+        st.write('Projections plots will be shown')
+        projections(processed_image)
 
 
 with st.container():

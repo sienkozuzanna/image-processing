@@ -296,6 +296,40 @@ def sharpen_filter(org_image, middle_el_weight):
     cropped_image = new_image.crop((middle, middle, width - middle, height - middle))
     return cropped_image
 
+def custom_filter(org_image, w11,w12,w13,w21,w22,w23,w31,w32,w33):
+    mask_size =3
+    middle = mask_size//2
+    padded_image = padding_edges(org_image, middle)
+    width, height = padded_image.size
+    pixels = padded_image.load()
+    new_image = padded_image.copy()
+    new_pixels = new_image.load()
+
+    def create_kernel(w11,w12,w13,w21,w22,w23,w31,w32,w33):
+        kernel = [[w11,w12,w13],[w21,w22,w23],[w31,w32,w33]]
+        return kernel
+    
+    mask = create_kernel(w11,w12,w13,w21,w22,w23,w31,w32,w33)
+    
+    for x in range(middle, width-middle):
+        for y in range(middle, height-middle):
+            r_total, g_total, b_total = 0, 0, 0
+            for i in range(-middle, middle+1):
+                for j in range(-middle, middle+1):
+                    if 0 <= x + i < width and 0 <= y + j < height:
+                        r,g,b = pixels[x+i, y+j]
+                        weight = mask[i + middle][j + middle]
+                        r_total += r * weight
+                        g_total+=g * weight
+                        b_total += b * weight
+            r_total = int(r_total)
+            g_total=int(g_total)
+            b_total = int(b_total)
+  
+            new_pixels[x,y] = (min(max(r_total, 0), 255), min(max(g_total, 0), 255), min(max(b_total, 0), 255))
+    cropped_image = new_image.crop((middle, middle, width - middle, height - middle))
+    return cropped_image
+
 #--------------------------- Edge detection methods---------------------------------------
 
 def roberts_cross(org_image):
