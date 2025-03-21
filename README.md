@@ -3,12 +3,6 @@
 ## Overview
 This project implements image processing algorithms from scratch using Python. The application is built with the Streamlit library, providing an interactive graphical user interface (GUI) for users to apply various image processing techniques in real-time. The solution makes use of several essential Python libraries, including NumPy, Pillow, Matplotlib, and Pandas, to handle image operations, visualize data, and perform mathematical computations.
 
-## Libraries Used
-- **NumPy**: For matrix and vector operations, and mathematical functions.
-- **Pillow**: For loading and processing images.
-- **Matplotlib**: For visualizing data and creating plots.
-- **Pandas**: For data frame operations.
-
 ## Features
 The solution is implemented as a desktop application with an easy-to-understand interface that allows users to perform single or multiple operations on a loaded image. The effects of the transformations are visible in real-time, allowing users to compare before-and-after results. The application supports loading images in various formats, such as JPEG, PNG, and JPG, and allows users to save the processed images on their disk.
 
