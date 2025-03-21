@@ -9,34 +9,35 @@ The solution is implemented as a desktop application with an easy-to-understand 
 ### Supported Image Operations
 
 1. **Grayscale Conversion**  
-   A method for converting an image to grayscale by computing the average value of the 3 color channels (R, G, and B), or using more advanced methods that consider the human eye's sensitivity to different colors.
+   This method converts an image to grayscale. The conversion is done by computing the average value of the 3 color channels (R, G, and B), or by using more advanced methods that account for the human eye's sensitivity to different colors.  
+   Additionally, a Decomposition Method is implemented, where the grayscale image is created using the minimum or maximum value from the color channels independently.
 
-2. **Decomposition Method**  
-   A method that uses the minimum or maximum value from the color channels independently to create a grayscale image.
-
-3. **Brightness Adjustment**  
+2. **Brightness Adjustment**  
    An operation that increases or decreases the brightness of an image. Adding a positive constant to each pixel value brightens the image, while subtracting a constant darkens it.
 
-4. **Contrast Adjustment**  
+3. **Contrast Adjustment**  
    This method modifies the difference between the lightest and darkest pixels in the image using a specific formula.
 
-5. **Negative**  
+4. **Negative**  
    A transformation that inverts the color values of all pixels in the image.
 
-6. **Binarization**  
+5. **Binarization**  
    Converts the image into black and white (binary) based on a threshold value. Each pixel is assigned either a white (255) or black (0) value depending on whether its grayscale value exceeds the threshold. The user can manually adjust the threshold.
 
-7. **Smoothing Filters**  
+6. **Smoothing Filters**  
    Includes filters like the **Mean Filter**, **Median Filter**, and **Gaussian Filter**, all of which blur the image to reduce noise or detail.
 
-8. **Edge Detection**  
+7. **Edge Detection**  
    Implements methods like **Sobel Filter** and **Roberts Cross** to detect edges in an image, which are essential for object detection or image analysis.
 
-9. **Resize**  
+8. **Resize**  
    The image can be resized, either by scaling or cropping, to meet specific size requirements.
 
-10. **Projection Graphs**  
+9. **Projection Graphs**  
     Vertical and horizontal projection graphs are available to visualize the distribution of pixel intensities across the image.
+
+10. **Histograms**  
+    The application generates histograms to visualize the distribution of pixel intensity values in an image. The histograms represent the frequency of occurrence of each pixel intensity level.
 
 ### Image Compression
 The project also includes methods for image compression using **Singular Value Decomposition (SVD)**. This allows for representing an image in a more compact form while minimizing quality loss.
