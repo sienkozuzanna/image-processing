@@ -388,6 +388,26 @@ def sobel_filter(org_image):
     return new_image
 
 
+#------------------------------ Histogram equalization method -------------------------------------------
+
+def histogram_equalization(org_image):
+    img_array = np.array(org_image)
+    img_equalized = np.zeros_like(img_array)
+    equalized_channels = []
+    for i in range(3): #for 3 color channels RGB
+        channel = img_array[:, :, i]
+        hist, _ = np.histogram(channel.flatten(), bins=256, range=[0, 256])
+        cdf = hist.cumsum() #cdf - cumulative distribtion
+        cdf_normalized = (cdf - cdf.min()) * 255 / (cdf.max() - cdf.min())
+        channel_equalized = np.interp(channel.flatten(), range(256), cdf_normalized)
+        channel_equalized = channel_equalized.reshape(channel.shape)  
+        equalized_channels.append(channel_equalized)
+        
+    img_equalized = np.stack(equalized_channels, axis=-1).astype(np.uint8)
+    img_equalized = Image.fromarray(img_equalized)
+    return img_equalized
+
+
 def DCT_matrix(N=8): #N=8 for image compression
     #creating NxN DTC matrix
     T=np.zeros((N,N))

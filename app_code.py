@@ -11,6 +11,7 @@ st.set_page_config(layout="wide")
 
 st.title('Image processing app')
 
+
 with st.container():
     uploaded_file = st.file_uploader("Choose an image", type=["jpg", "png", "jpeg"])
 
@@ -21,13 +22,14 @@ with st.sidebar:
     else:
         width,height =(0,0)
 
-    grayscale = st.radio('Conver to grayscale', options=('Human Eye', 'Naive', 'Decomposition','None'),index=3)
+    grayscale = st.radio('Convert to grayscale', options=('Human Eye', 'Naive', 'Decomposition','None'),index=3)
     brightness = st.slider("Adjust brightness", min_value=-255, max_value=255, value=0)
     contrast = st.slider("Adjust contrast", min_value=-5.0, max_value=5.0, value=1.0, step=0.1)
     negative = st.checkbox("Negative")
     binarization_enabled = st.checkbox("Apply binarization")
     if binarization_enabled:
         binarization_threshold = st.slider("Binarization threshold", min_value=0, max_value=255, step=1, value=128)
+    histogram_equalization_method = st.checkbox('Apply histogram equalization')
     blurr_choice = st.radio('Apply noise reduction', options=('Average filter', 'Median filter', 'Gaussian filter', 'None'), index=3)
     if blurr_choice == 'Average filter':
         avg_mask = st.slider("Choose average filter mask size", min_value=1, max_value=int(min(0.1*width, 0.1*height)), value=1, step=2)
@@ -54,62 +56,66 @@ with st.sidebar:
         sharpen = st.slider('Chose sharpening weight', min_value=9, max_value=30, value=9, step=2)
     edges = st.radio('Choose edge detection method', ('Roberts cross','Sobel filter','None'), index=2)
 
-
+if uploaded_file is None:
+    st.warning("Please upload an image to process.")
 
 with st.container():
     col1, col2 = st.columns([1, 1])
-    if uploaded_file is None:
-        st.warning("Please upload an image to process.")
+    if uploaded_file is not None:
+        with col1:
+            if uploaded_file is not None:
+                image = Image.open(uploaded_file)
+                st.image(image, caption="Original Image", width=330)
+            
+        with col2:
+            if uploaded_file is not None:
+                processed_image = image
+                w, h = image.size
 
-    with col1:
-        if uploaded_file is not None:
-            image = Image.open(uploaded_file)
-            st.image(image, caption="Original Image", width=330)
-        
-        
+                if grayscale == "None":
+                    grayscale = False
+                if grayscale == 'Human Eye':
+                    processed_image = convert_to_gray(processed_image)
+                    grayscale = True
+                elif grayscale == 'Naive':
+                    processed_image = convert_to_gray_naive(processed_image)
+                    grayscale = True
+                elif grayscale == 'Decomposition':
+                    processed_image = convert_to_gray_decomp(processed_image)
+                    grayscale = True
+                if brightness != 0:
+                    processed_image = adjust_brightness(processed_image, brightness)
+                if contrast != 1.0:
+                    processed_image = adjust_contrast(processed_image, contrast)
+                if negative:
+                    processed_image = negative_image(processed_image)
+                if binarization_enabled:
+                    processed_image = binarization(processed_image, binarization_threshold)
+                if blurr_choice == 'Average filter':
+                    processed_image = average_filter(processed_image, mask=avg_mask)
+                elif blurr_choice == 'Median filter':
+                    processed_image = median_filter(processed_image, mask=med_mask)
+                elif blurr_choice == 'Gaussian filter':
+                    processed_image = gaussian_filter(processed_image, sigma=sigma)
+                if custom_filter_enabled:
+                    processed_image = custom_filter(processed_image, w11, w12, w13, w21, w22, w23, w31, w32, w33)
 
-    with col2:
-        if uploaded_file is not None:
-            processed_image = image
-            w, h = image.size
+                if sharpen_enabled:
+                    processed_image = sharpen_filter(processed_image, sharpen)
 
-            if grayscale == 'Human Eye':
-                processed_image = convert_to_gray(processed_image)
-            elif grayscale == 'Naive':
-                processed_image = convert_to_gray_naive(processed_image)
-            elif grayscale =='Decomposition':
-                processed_image = convert_to_gray_decomp(processed_image)
-            if brightness != 0:
-                processed_image = adjust_brightness(processed_image, brightness)
-            if contrast != 1.0:
-                processed_image = adjust_contrast(processed_image, contrast)
-            if negative:
-                processed_image = negative_image(processed_image)
-            if binarization_enabled:
-                processed_image = binarization(processed_image, binarization_threshold)
-            if blurr_choice =='Average filter':
-                processed_image = average_filter(processed_image, mask=avg_mask)
-            elif blurr_choice=='Median filter':
-                processed_image = median_filter(processed_image, mask=med_mask)
-            elif blurr_choice =='Gaussian filter':
-                processed_image = gaussian_filter(processed_image, sigma=sigma)
-            if custom_filter_enabled:
-                processed_image = custom_filter(processed_image, w11,w12,w13,w21,w22,w23,w31,w32,w33)
+                if edges == 'Roberts cross':
+                    processed_image = roberts_cross(processed_image)
+                elif edges == "Sobel filter":
+                    processed_image = sobel_filter(processed_image)
 
-            if sharpen_enabled:
-                processed_image = sharpen_filter(processed_image, sharpen)
-
-            if edges == 'Roberts cross':
-                processed_image = roberts_cross(processed_image)
-            elif edges == "Sobel filter":
-                processed_image = sobel_filter(processed_image)
+                if histogram_equalization_method:
+                    processed_image = histogram_equalization(processed_image)
 
             st.image(processed_image, caption="Processed Image", width=330)
 
             buffered = io.BytesIO()
             processed_image.save(buffered, format="PNG")
             buffered.seek(0)
-
             st.download_button(
                 label="Download Processed Image",
                 data=buffered,
