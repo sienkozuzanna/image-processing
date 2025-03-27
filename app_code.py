@@ -147,59 +147,63 @@ with st.container():
         if resized_img is not None:
             st.image(resized_img, caption="Resized Image")
 with st.container():
-    st.subheader("Histogram Section")
-    show_histogram = st.checkbox("Show Histogram", value=False)
+    if uploaded_file is not None:
+        st.subheader("Histogram Section")
+        show_histogram = st.checkbox("Show Histogram", value=False)
 
-    if show_histogram:
-        st.write("Histogram will be shown here:")
-        histogram(processed_image, gray_scale=grayscale)
+        if show_histogram:
+            st.write("Histogram will be shown here:")
+            if processed_image is not None:
+                histogram(processed_image, gray_scale=grayscale)
 
-    st.subheader('Horizontal and vertical projection')
-    show_proj = st.checkbox('Show plots',value=False)
-    if show_proj:
-        st.write('Projections plots will be shown')
-        projections(processed_image)
+        st.subheader('Horizontal and vertical projection')
+        show_proj = st.checkbox('Show plots',value=False)
+        if show_proj:
+            st.write('Projections plots will be shown')
+            if processed_image is not None:
+                projections(processed_image)
 
 
 with st.container():
-    st.subheader('Image Compression using SVD decomposition')
     if uploaded_file is not None:
-        image = processed_image
-        w, h = image.size
+        st.subheader('Image Compression using SVD decomposition')
+        if uploaded_file is not None:
+            image = processed_image
+            w, h = image.size
 
-        k_max_r, k_max_g, k_max_b = get_no_singular_values(image)
-        max_k = min(k_max_r, k_max_g, k_max_b)
-        #print(max_k)
-        num_steps=7
-        #orders = np.logspace(np.log10(1), np.log10(max_k), num_steps, base=2, dtype=int)
-        #orders = [1, 5, 10, 20, 50, 100, 300, 500, max_k]
-        #orders = np.linspace(5, max_k, num_steps, dtype=int)
-        orders = np.logspace(np.log10(1), np.log10(max_k), num_steps, dtype=int)
+            k_max_r, k_max_g, k_max_b = get_no_singular_values(image)
+            max_k = min(k_max_r, k_max_g, k_max_b)
+            #print(max_k)
+            num_steps=7
+            #orders = np.logspace(np.log10(1), np.log10(max_k), num_steps, base=2, dtype=int)
+            #orders = [1, 5, 10, 20, 50, 100, 300, 500, max_k]
+            #orders = np.linspace(5, max_k, num_steps, dtype=int)
+            orders = np.logspace(np.log10(1), np.log10(max_k), num_steps, dtype=int)
 
-        fig, axes = plt.subplots(2, 4, figsize=(20, 10))
-        axes = axes.flatten()
+            fig, axes = plt.subplots(2, 4, figsize=(20, 10))
+            axes = axes.flatten()
 
-        axes[0].imshow(image)
-        axes[0].axis('off')
-        axes[0].set_title("Original Image")
-        image_sizes=[]
+            axes[0].imshow(image)
+            axes[0].axis('off')
+            axes[0].set_title("Original Image")
+            image_sizes=[]
 
-        for i, order in enumerate(orders):
-            compressed_image = compression_svd(image, order)
-            axes[i + 1].imshow(compressed_image)
-            axes[i + 1].axis('off')
-            axes[i + 1].set_title(f"Number of k singular values = {order}")
-            compressed_image_pil = Image.fromarray(np.uint8(np.around(compressed_image)))
-            compressed_size = get_image_bytes(compressed_image_pil)/1024/1024
-            image_sizes.append((order, compressed_size))
+            for i, order in enumerate(orders):
+                compressed_image = compression_svd(image, order)
+                axes[i + 1].imshow(compressed_image)
+                axes[i + 1].axis('off')
+                axes[i + 1].set_title(f"Number of k singular values = {order}")
+                compressed_image_pil = Image.fromarray(np.uint8(np.around(compressed_image)))
+                compressed_size = get_image_bytes(compressed_image_pil)/1024/1024
+                image_sizes.append((order, compressed_size))
 
-        plt.subplots_adjust(hspace=0.2, wspace=0.2)
-        st.pyplot(fig)
+            plt.subplots_adjust(hspace=0.2, wspace=0.2)
+            st.pyplot(fig)
 
-        st.pyplot(visualize_compression_errors(processed_image, orders))
+            st.pyplot(visualize_compression_errors(processed_image, orders))
 
-        df_sizes = pd.DataFrame(image_sizes, columns=["Number of k (SVD components)", "Image Size (Mb)"])
-        st.table(df_sizes.set_index("Number of k (SVD components)"))
+            df_sizes = pd.DataFrame(image_sizes, columns=["Number of k (SVD components)", "Image Size (Mb)"])
+            st.table(df_sizes.set_index("Number of k (SVD components)"))
 
 
 
