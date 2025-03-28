@@ -46,5 +46,9 @@ The project also includes methods for image compression using **Singular Value D
 - **Mean Squared Error (MSE)**: A metric to measure the average squared difference between the original and compressed images.
 - **Peak Signal-to-Noise Ratio (PSNR)**: A metric used to evaluate the quality of the compressed image by comparing the maximum possible signal value to the noise introduced during compression.
 
-## Performance Considerations
+### Performance Considerations
 Since the image processing algorithms were implemented manually, the computational complexity of each operation is at least O(n²), which may result in noticeable delays when processing larger images or using large filter masks.
+
+### Authors
+- [Katarzyna Rogalska](https://github.com/katarzynarogalska)
+- [Zuzanna Sieńko](https://github.com/sienkozuzanna)
